@@ -25,10 +25,16 @@ Created on May 22, 2012
 '''
 #!/usr/bin/python
 
+
+#============================================
+# IMPORT ALL NECESSARY MODULES
+#============================================
 import sys
 import os
 import errno
 import time
+import fort.DFT.dft as dft
+
 import cosmolopy.distance as cd
 from cosmolopy import *
 
@@ -55,6 +61,8 @@ try:
     import asciitable as atab
 except:
     sys.exit("Please install asciitable module")
+    
+    
     
 class PyGS(object):
     '''
@@ -630,7 +638,7 @@ class PyGS(object):
         plt.show()
         
         
-    def PowerSpec_1d(self,quantity="redshift",bins=None,min_wave=0.0,max_wave=1000.0,pad=1,wavelength=True):
+    def PowerSpec_1d_fast(self,quantity="redshift",bins=None,min_wave=0.0,max_wave=1000.0,pad=1,wavelength=True):
         """
         Computes the 1D power spectrum and plots it.
         """
@@ -644,7 +652,7 @@ class PyGS(object):
         hist = np.histogram(self.survey_data[quantity],bins)
         n = pad*hist[0].size
         ps = np.abs(np.fft.rfft(hist[0],n=n)/np.sqrt(n))**2
-        
+
         step = hist[1][2]-hist[1][1]
         freq = np.fft.fftfreq(n, step)
         
@@ -665,8 +673,34 @@ class PyGS(object):
             plt.savefig(self.power1d_dir+'/'+quantity+'_bins'+str(bins)+'_pad'+str(pad)+'_frequency.eps')
         plt.show()
         
-        return [ps,freq*2.0*np.pi,wavelength]
-    
+        return ps,freq*2.0*np.pi,wavelength
+
+    def PowerSpec_1d_slow(self,quantity="redshift",bins=None,min_wave=0.0000001,max_wave=1000.0,n_waves=1000):
+        """
+        Computes the 1D power spectrum and plots it.
+        """
+        wavelengths = np.asfortranarray(np.linspace(min_wave,max_wave,n_waves)) 
+        
+        if bins:        
+            hist,edges = np.histogram(self.survey_data[quantity],bins)
+            centres = []
+            for i,edge in enumerate(edges[:-1]):
+                centres = centres + [(edge+edges[i+1])/2]
+            centres = np.asfortranarray(centres)
+            ps = dft.dft_one(np.asfortranarray(hist),centres,wavelengths)
+        else:
+            ps = dft.phasedft_one(np.asfortranarray(self.survey_data[quantity]),wavelengths)
+        
+
+        plt.clf()
+        plt.title("1D P.S. for "+quantity+" of sample "+self.sample_name.partition('.')[0]+" from "+self.survey_name)
+        plt.plot(wavelengths,ps,'b-')
+        plt.xlabel("Wavelength")
+        plt.ylabel("Power")
+        plt.savefig(self.power1d_dir+'/'+quantity+'_bins'+str(bins)+'_wavelength_smooth.eps')
+        
+        return ps,wavelengths
+        
     def PowerSpec_2d(self,quantity=("c_dist","ra"),bins=None,min_wave=(0.0,0.0),max_wave=(1000.0,1000.0),
                      pad=(1,1),wavelength=True):
         """

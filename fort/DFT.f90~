@@ -30,18 +30,9 @@ module DFT
    !shape of (size(dist1),size(dist2),...). The wavelength arrays contain
    !the values of wavelengths to be calculated in the power spectrum.
      
-   real(8), allocatable ::dat1(:)     !Values for 1D transform
-   real(8), allocatable ::dat2(:,:)   !Values for 2D transform
-   real(8), allocatable ::dat3(:,:,:) !Values for 3D transform
-   
-   real(8), allocatable ::dist1(:)    !Co-ordinates for 1D transform
-   real(8), allocatable ::dist2(:)    !Co-ordinates for 2D transform
-   real(8), allocatable ::dist3(:)    !Co-ordinates for 3D transform
-   
-   real(8), allocatable ::wvl1(:),wvl2(:),wvl3(:) !Wavelength arrays.
-   
    real(8), parameter	  ::pi= 3.141592653589  !Value of Pi
  	 complex(8), parameter::ci= (0.0d0,1.0d0)   !The Complex Unit (i)
+ 	 
  contains
  
  !============================================================================
@@ -62,9 +53,7 @@ module DFT
  	 
  	 
      ! Initialize variables.
-     n = size(wvl1)
      camp = (0.0,0.0)
-     nn = size(dist1)
      
      !Perform the grunt-work of the DFT
      do j = 1, n
@@ -87,13 +76,14 @@ module DFT
  !============================================================================
  !3. Real data (eg. from un-normalized histogram) DFT 1D
  !============================================================================ 	
-  subroutine PhaseDFT_One(n,nn,dist1,wvl1,ps)
+  subroutine DFT_One(dat1,nn,dist1,n,wvl1,ps)
 
    !Requires dist1 and wvl1 to be defined.
 	 integer,intent(in)  ::n        !The size of the wavelength array
-	 integer             ::nn       !The size of the data
-	 real(8)             ::dist1(nn)!Co-ordinates for 1D transform
-	 real(8)             ::wvl1(n)  !Co-ordinates for 1D transform
+	 integer,intent(in)  ::nn       !The size of the data
+	 real(8),intent(in)  ::dist1(nn)!Co-ordinates for 1D transform
+	 real(8),intent(in)  ::wvl1(n)  !Co-ordinates for 1D transform
+	 real(8),intent(in)  ::dat1(nn) !Values for the FT 
 	 
  	 real(8), intent(out)::ps(n)    !The power-spectrum
  	 
@@ -102,9 +92,7 @@ module DFT
  	 
  	 
      ! Initialize variables.
-     n = size(wvl1)
      camp = (0.0,0.0)
-     nn = size(dist1)
      
      !Perform the grunt-work of the DFT
      do j = 1, n
@@ -126,23 +114,22 @@ module DFT
  !============================================================================
  !4. 2DFT Phase
  !============================================================================ 
- 	subroutine PhaseDFT_Two(ps)
-
- 	 !Requires wvl1,wvl2,dist1,dist2
-
- 	 real(8),  intent(out)::ps(size(wvl1),size(wvl2))   !Power Spectrum
+ 	subroutine PhaseDFT_Two(nn,dist1,dist2,no_1,wvl1,no_2,wvl2,ps)
+ 	 integer, intent(in)  ::nn                          !Number of data-points
+ 	 integer, intent(in)  ::no_1,no_2                   !Sizes of wavelength arrays 
+ 	 real(8)              ::dist1(nn),dist2(nn)         !Co-ordinates for 2D transform
+ 	 real(8)              ::wvl1(no_1),wvl2(no_2)       !Wavelengths for 2D transform
  	 
- 	 complex(8)           ::camp(size(wvl1),size(wvl2)) !Complex FT amplitudes
+ 	 real(8),  intent(out)::ps(no_1,no_2)   !Power Spectrum
+ 	 
+ 	 complex(8)           ::camp(no_1,no_2) !Complex FT amplitudes
  	 integer				      ::i, ii, j,jj                 !Iterators
- 	 integer              ::nn                          !Number of data-points
- 	 integer              ::no_1,no_2                   !Sizes of wavelength arrays
+ 	 
  	 real(8)              ::k_1,k_2                     !Wavenumbers
  	 
  	 !Initialize Variables
- 	 no_1 = size(wvl1)
- 	 no_2 = size(wvl2)
  	 camp(:,:) = 0.0d0
- 	 nn = size(dist1)
+
 
  	 ! Perform 2DFT
  	 do jj =1,no_2
@@ -173,31 +160,28 @@ module DFT
  !============================================================================
  !5. 2DFT Lattice
  !============================================================================ 
- 	subroutine DFT_Two(ps)
-
- 	 !Requires wvl1,wvl2,dat2,dist1,dist2
- 	   
+ 	subroutine DFT_Two(dat2,nn_1,dist1,nn_2,dist2,no_1,wvl1,no_2,wvl2,ps)
  	 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  	   !This subroutine takes as the input values a 2D array. The co-ordinates
  	   !of each array point are specified by the 1D vectors dist1 and dist2. These
  	   !may be irregular, but must be rectilinear. To input completely irregular
  	   !data, use pointDFT_Two.
- 	     
- 	 real(8), intent(out) ::ps(size(wvl1),size(wvl2))    !Power Spectrum
+ 	 integer, intent(in)  ::nn_1,nn_2                   !Number of data-points
+ 	 integer, intent(in)  ::no_1,no_2                   !Sizes of wavelength arrays 
+ 	 real(8), intent(in)  ::dist1(nn_1),dist2(nn_2)         !Co-ordinates for 2D transform
+ 	 real(8), intent(in)  ::wvl1(no_1),wvl2(no_2)       !Wavelengths for 2D transform
+ 	 real(8), intent(in)  ::dat2(nn_1,nn_2)             !Values for the FT
  	 
- 	 complex(8)          ::camp(size(wvl1),size(wvl2))  !Complex FT amplitudes
- 	 integer				     ::i, ii, j,jj                  !Iterators
- 	 integer             ::nn_1, nn_2                   !Number of data
- 	 integer             ::no_1,no_2                    !Size of wavelength arrays
- 	 real                :: k_1, k_2                    !Wavenumbers
+ 	 real(8),  intent(out)::ps(no_1,no_2)   !Power Spectrum
+ 	 
+ 	 complex(8)           ::camp(no_1,no_2) !Complex FT amplitudes
+ 	 integer				      ::i, ii, j,jj                 !Iterators
+ 	 
+ 	 real(8)              ::k_1,k_2                     !Wavenumbers
  	 
  	 !Initialize Variables
- 	 no_1 = size(wvl1)
- 	 no_2 = size(wvl2)
+
  	 camp(:,:) = 0.0d0
- 	 nn_1 = size(dist1)
- 	 nn_2 = size(dist2)
- 	 
 
  	 ! Perform 2DFT
  	 do jj =1,no_2
@@ -229,25 +213,22 @@ module DFT
  !============================================================================
  !6. 3DFT Phase
  !============================================================================ 
- 	subroutine PhaseDFT_Three(ps)
-
+ 	subroutine PhaseDFT_Three(nn,dist1,dist2,dist3,no_1,wvl1,no_2,wvl2,&
+ 	                          &no_3,wvl3,ps)
+ 	 integer, intent(in)  ::nn                          !Number of data-points
+ 	 integer, intent(in)  ::no_1,no_2,no_3              !Sizes of wavelength arrays 
+ 	 real(8), intent(in)  ::dist1(nn),dist2(nn),dist3(nn)!Co-ordinates for 2D transform
+ 	 real(8), intent(in)  ::wvl1(no_1),wvl2(no_2),wvl3(no_3)           !Wavelengths for 2D transform
  	 
- 	 !Requires dist1,dist2,dist3,wvl1,wvl2,wvl3
+ 	 real(8),  intent(out)::ps(no_1,no_2,no_3)   !Power Spectrum
  	 
- 	 real(8), intent(out)			::ps(size(wvl1),size(wvl2),size(wvl3))    !The Power Spectrum
-	 
- 	 real(8)		    ::camp(size(wvl1),size(wvl2),size(wvl3))    !The Power Spectrum
- 	 integer				::i, ii, j, jj,iii,jjj   !Iterators
- 	 integer        ::no_1,no_2,no_3 !Size of wavelength arrays
- 	 integer        ::nn             !Column length of data
- 	 real(8)        ::k_1,k_2,k_3    !Wavenumbers
+ 	 complex(8)           ::camp(no_1,no_2,no_3) !Complex FT amplitudes
+ 	 integer				      ::i, ii, j,jj,jjj,iii         !Iterators
+ 	 
+ 	 real(8)              ::k_1,k_2,k_3                 !Wavenumbers
  	 
  	 !Initialize Variables
- 	 no_1 = size(wvl1)
- 	 no_2 = size(wvl2)
- 	 no_3 = size(wvl3)
  	 camp(:,:,:) = 0.0d0
- 	 nn = size(dist1)
  	 
  	 ! Perform DFT
  	 do jjj=1,no_3
@@ -285,27 +266,25 @@ module DFT
  !============================================================================
  !7. 3DFT
  !============================================================================ 
- 	subroutine DFT_Three(ps)
+ 	subroutine DFT_Three(dat3,nn_1,dist1,nn_2,dist2,nn_3,dist3,&
+ 	                    &no_1,wvl1,no_2,wvl2,no_3,wvl3,ps)
 
- 	 !Requires wvl1,wvl2,wvl3,dist1,dist2,dist3,dat3
-
- 	 real(8), intent(out)	::ps(size(wvl1),size(wvl2),size(wvl3))    !The Power Spectrum
- 	 complex(8)           ::camp(size(wvl1),size(wvl2),size(wvl3))  !The complex amplitudes of the FT
+ 	 integer,intent(in)   ::no_1,no_2,no_3 !Size of wavelength arrays
+ 	 integer,intent(in)   ::nn_1,nn_2,nn_3 !Column length of data    
+ 	 real(8), intent(in)  ::dist1(nn_1),dist2(nn_2),dist3(nn_3)!Co-ordinates for 2D transform
+ 	 real(8), intent(in)  ::wvl1(no_1),wvl2(no_2),wvl3(no_3)           !Wavelengths for 2D transform
+ 	 real(8), intent(in)  ::dat3(nn_1,nn_2,nn_3)  !Values for the FT
+ 	 
+ 	 real(8), intent(out)	::ps(no_1,no_2,no_3)    !The Power Spectrum
+ 	 complex(8)           ::camp(no_1,no_2,no_3)  !The complex amplitudes of the FT
  	 
  	 
  	 integer				::i, ii, j, jj,iii,jjj   !Iterators
- 	 integer        ::no_1,no_2,no_3 !Size of wavelength arrays
- 	 integer        ::nn_1,nn_2,nn_3 !Column length of data
+ 	 
  	 real(8)        ::k_1,k_2,k_3    !Wavenumbers
  	 
  	 !Initialize Variables
- 	 no_1 = size(wvl1)
- 	 no_2 = size(wvl2)
- 	 no_3 = size(wvl3)
  	 camp(:,:,:) = 0.0d0
- 	 nn_1 = size(dist1)
- 	 nn_2 = size(dist2)
- 	 nn_3 = size(dist3)
  	 
  	 ! Perform DFT
  	 do jjj=1,no_3

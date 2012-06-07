@@ -31,7 +31,7 @@ module DFT
    !the values of wavelengths to be calculated in the power spectrum.
      
    real(8), parameter	  ::pi= 3.141592653589  !Value of Pi
- 	 complex(8), parameter::ci= (0.0d0,1.0d0)   !The Complex Unit (i)
+   complex(8), parameter::ci= (0.0d0,1.0d0)   !The Complex Unit (i)
  	 
  contains
  
