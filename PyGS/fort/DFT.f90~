@@ -97,7 +97,7 @@ module DFT
      !Perform the grunt-work of the DFT
      do j = 1, n
       do i=1,nn
-      camp(j)=camp(j)+Exp(ci*(2.d0*pi/wvl1(j))*dist1(i))
+      camp(j)=camp(j)+dat1(i)*Exp(ci*(2.d0*pi/wvl1(j))*dist1(i))
       end do
      end do
      

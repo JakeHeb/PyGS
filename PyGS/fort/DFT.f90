@@ -31,7 +31,7 @@ module DFT
    !the values of wavelengths to be calculated in the power spectrum.
      
    real(8), parameter	  ::pi= 3.141592653589  !Value of Pi
- 	 complex(8), parameter::ci= (0.0d0,1.0d0)   !The Complex Unit (i)
+   complex(8), parameter::ci= (0.0d0,1.0d0)   !The Complex Unit (i)
  	 
  contains
  
@@ -97,7 +97,7 @@ module DFT
      !Perform the grunt-work of the DFT
      do j = 1, n
       do i=1,nn
-      camp(j)=camp(j)+Exp(ci*(2.d0*pi/wvl1(j))*dist1(i))
+      camp(j)=camp(j)+dat1(i)*Exp(ci*(2.d0*pi/wvl1(j))*dist1(i))
       end do
      end do
      
@@ -234,7 +234,7 @@ module DFT
  	 do jjj=1,no_3
  	  k_3 = wvl3(jjj)
  	  do jj =1,no_2
-      write(*,*)'  ',((real(jj)+real(j)/real(no_2))/(real(no_3)))*100.,'% done'
+      write(*,*)'  ',((real(jjj)+real(jj)/real(no_2))/(real(no_3)))*100.,'%done'
  	   k_2 = wvl2(jj)
  	   do j =1,no_1
  	    k_1 = wvl1(j)
@@ -290,7 +290,7 @@ module DFT
  	 do jjj=1,no_3
  	  k_3 = 2.d0*pi/wvl3(jjj)
  	  do jj =1,no_2
-      write(*,*)'  ',((real(jj)+real(j)/real(no_2))/(real(no_3)))*100.,'% done'
+      write(*,*)'  ',((real(jjj)+real(jj)/real(no_2))/(real(no_3)))*100.,'%done'
  	   k_2 = 2.d0*pi/wvl2(jj)
  	   do j =1,no_1
  	    k_1 = 2.d0*pi/wvl1(j)
