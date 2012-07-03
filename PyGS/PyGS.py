@@ -33,7 +33,7 @@ import sys
 import os
 import errno
 import time
-from fort.DFT import dft
+from PyGS.fort.DFT import dft
 
 import cosmolopy.distance as cd
 from cosmolopy import *
@@ -207,6 +207,15 @@ class PyGS(object):
         except OSError, e:
             if e.errno != errno.EEXIST:
                 raise
+            
+        # Make a Filtered surver Directory
+        self.filtered_dir = self.filtered_dir+'/FilteredData'    
+        try:
+            os.makedirs(self.filtered_dir)
+        except OSError, e:
+            if e.errno != errno.EEXIST:
+                raise
+            
     def initial_file_import(self, filename,radians=True):
         """
         This method imports the file for the first time (the hard part...)
@@ -638,7 +647,7 @@ class PyGS(object):
         plt.show()
         
         
-    def PowerSpec_1d_fast(self,quantity="redshift",bins=None,min_wave=0.0001,max_wave=1000.0,pad=1,wavelength=True):
+    def PowerSpec_1d_fast(self,quantity="redshift",bins=None,min_wave=0.0001,max_wave=1000.0,pad=1,in_wavelength=True):
         """
         Computes the 1D power spectrum and plots it.
         
@@ -684,14 +693,14 @@ class PyGS(object):
 
         plt.clf()
         plt.title("1D P.S. for "+quantity+" of sample "+self.sample_name.partition('.')[0]+" from "+self.survey_name)
-        if wavelength:
+        if in_wavelength:
             plt.plot(wavelength[(wavelength<max_wave)&(wavelength>min_wave)],ps[(wavelength<max_wave)&(wavelength>min_wave)],'b-')
             plt.xlabel("Wavelength")
         else:
             plt.plot(freq[(wavelength<max_wave)&(wavelength>min_wave)]*2*np.pi,ps[(wavelength<max_wave)&(wavelength>min_wave)],'b-')
             plt.xlabel("Frequency (radians)")
         plt.ylabel("Power")
-        if wavelength:
+        if in_wavelength:
             plt.savefig(self.power1d_dir+'/'+quantity+'_bins'+str(bins)+'_pad'+str(pad)+'_wavelength.eps')
         else:
             plt.savefig(self.power1d_dir+'/'+quantity+'_bins'+str(bins)+'_pad'+str(pad)+'_frequency.eps')
@@ -902,6 +911,8 @@ class PyGS(object):
         """
         Returns and plots the 2d power spectra of the given quantities
         
+        At the moment this does not work correctly. This will be fixed soon.
+        
         This is the equivalent procedure to PowerSpec_1d_fast for 2-dimensions. However, in this case,
         the plotting becomes more difficult. The default plots are density images, with colours showing
         peaks. The irregular nature of the wavelength plots is pronounced in 2D however. 
@@ -930,11 +941,12 @@ class PyGS(object):
         
         # First bin the quantity (higher number of bins tends towards phase calculation)
         if not bins:
-            bins = [np.ceil(np.sqrt(self.N/100)),np.ceil(np.sqrt(self.N/100))]
+            bins = np.array([np.ceil(np.sqrt(self.N/100)),np.ceil(np.sqrt(self.N/100)),np.ceil(np.sqrt(self.N/100))])
             if bins[0] < 30:
-                bins = [30,30,30]
-                
-        hist,x_edges,y_edges,z_edges = np.histogramdd(self.survey_data[quantity[0]],self.survey_data[quantity[1]],self.survey_data[quantity[2]], bins)
+                bins = np.array([30,30,30])
+        print bins.shape
+        print self.survey_data[quantity[0]]       
+        hist,x_edges,y_edges,z_edges = np.histogramdd([self.survey_data[quantity[0]],self.survey_data[quantity[1]],self.survey_data[quantity[2]]], bins)
         
         n1 = pad[0]*(x_edges.size -1)
         n2 = pad[1]*(y_edges.size -1)
@@ -1023,38 +1035,73 @@ class PyGS(object):
             ps = dft.phasedft_two(np.asfortranarray(self.survey_data[quantity[0]]),np.asfortranarray(self.survey_data[quantity[1]]),
                                   np.asfortranarray(self.survey_data[quantity[2]]),wvl1,wvl2,wvl3)
 
-            
-       # plt.title("2D P.S. for "+quantity[0]+"and "+quantity[1]+" of sample "+self.sample_name.partition('.')[0]+" from "+self.survey_name)
-       # plt.imshow(ps.T,interpolation="gaussian",aspect=np.max(wvl1)/np.max(wvl2),origin='lower',extent=(np.min(wvl1),np.max(wvl1),np.min(wvl2),np.max(wvl2)))
-       # plt.xlabel(quantity[0]+" wavelength")
-       # plt.ylabel(quantity[1]+ " wavelength")
-       # plt.show()
-       # plt.savefig(self.power2d_dir+'/'+quantity[0]+'AND'+quantity[1]+'_bins'+str(bins[0])+','+str(bins[1])+'_frequency_smooth.eps')
 
-        return ps, wvl1, wvl2,wvl3    
-    # Visualize the points
-    #def PowerSpec_3d(self,quantity=("c_dist","ra"),bins=None,min_wave=(0.0,0.0),max_wave=(1000.0,1000.0),
-     #                pad=(1,1),wavelength=True):
-     #   
-     #   grid = np.zeros((wvl1.size*wvl2.size,3))
-     #   for i in range(wvl1.size):
-     #       for j in range(wvl2.size):
-     #           grid[i*wvl2.size+j,0] = wvl1[i]
-     #           grid[i*wvl2.size+j,1] = wvl2[j]
-     #           grid[i*wvl2.size+j,2] = cps[i,j]
-     #   
-     #   #mm.figure(1, fgcolor=(0, 0, 0), bgcolor=(1, 1, 1))
-     #   figure = mm.figure(1,bgcolor=(0,0,0),fgcolor=(1,1,1))
-     #   pts = mm.points3d(grid[:,0], grid[:,1], grid[:,2],grid[:,2],scale_factor=0.25,
-     ##                     extent=(0,1,0,1,0,1),mode='point')
-     #
-     #   # Create and visualize the mesh
-     #   mesh = mm.pipeline.delaunay2d(pts)
-     #   surf = mm.pipeline.surface(mesh,extent=(0,1,0,1,0,1))
-     #   
-     #   mm.axes(xlabel=quantity[0],ylabel=quantity[1],zlabel="Power")
-     #   mm.view()
-     #   #mm.show()
-   # 
-   # if wavelength:
-   #     mm.savefig(self.power2d_dir+'/'+quantity[0]+'AND'+quantity[1]+'_bins'+str(bins[0])+','+str(bins[1])+'_pad'+str(pad[0])+','+str(pad[1])+'_wavelength.eps',figure=figure)
+        return ps, wvl1, wvl2,wvl3      
+   
+    def filtering(self,quantity=['c_dist'],kmin=[35.0],kmax=[45.0],n_k=[10],min_phase=0.5):
+        """
+        Filters the galaxies based on whether they are in phase with a selected Fourier peak.
+        
+        SHOULD BE ABLE TO DO ALL ANALYSIS WITH THE FILTERED GALAXIES BASED ON REMAINS CONDITION
+        IS IT BETTER TO DO THIS BY WRITING OUT THE 'FILTERED SURVEY'?
+        """
+       
+        from PyGS.fort.filter import filters
+        if type(quantity) == type([1,2,3]):
+            dim = len(quantity)
+            if dim > 3:
+                sys.exit("Too many quantities in filter (must be 3 or less)")
+            if (len(kmin) != dim) or (len(kmax) != dim) or (len(n_k) !=dim):
+                sys.exit("All input values must have same dimension")
+                                                            
+        if dim == 1:
+            filters.filter_1d(self.survey_data[quantity[0]],kmin[0],kmax[0],n_k[0],min_phase)
+            self.remains = np.asfortranarray(filters.remains)
+
+            filter_file = open(self.filtered_dir+'/1D_filter_'+kmin[0]+'to'+kmax[0])    
+            filter_file.write("# Fourier filter with following characteristics:\n")
+            filter_file.write("# kmin: "+kmin[0]+'\n')
+            filter_file.write("# kmax: "+ kmax[0]+'\n')
+            filter_file.write("# n_k: "+ n_k[0]+'\n')
+            filter_file.write("#======================")
+        
+            atab.write(self.survey_data[self.remains],filter_file)
+        
+            filter_file.close()
+            
+        if dim == 3:
+            filters.filter_3d(self.survey_data[quantity[0],quantity[1],quantity[2]],kmin,kmax,n_k,min_phase)
+            self.remains = np.asfortranarray(filters.remains)
+        
+        filter_file = open(self.filtered_dir+'/'+dim+'D_filter_'+kmin[0])    
+        survey_file.write("# Omega_k: "+str(self.cosmology["omega_k_0"])+'\n')
+        survey_file.write("# h: "+str(self.cosmology["h"])+'\n')
+        survey_file.write("# =================================\n\n")
+        
+        atab.write(self.survey_data,survey_file)
+        
+        survey_file.close()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

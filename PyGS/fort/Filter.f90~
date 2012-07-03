@@ -1,0 +1,429 @@
+include 'Parameters.f90'
+include 'Variables.f90'
+include 'Fourier.f90'
+include 'Procedures.f90'
+include 'DataImport.f90'
+include 'Options.f90'
+
+program GaussDensity
+ use GlobalParams
+ use DataLimitParams
+ use SourceParams
+ use DataVars
+ use GlobalVars
+ use Fourier
+ use Procedures
+ use DataImport
+ use FourierParams
+ use FilterParams
+ use FilterVars
+ use CentreVars
+ use HistogramParams
+ use Options
+ implicit none
+ 
+ !=============================================================================
+ !0. Initialize Program and Import Data
+ !=============================================================================
+ 	 call cpu_time(ti_all)
+ 	  
+   do src = 0,srcn
+	   if(src==0)then
+		   goto 77
+	   elseif(src==1)then
+		   source = src1
+	   elseif(src==2)then
+		   source = src2
+	   elseif(src==3)then
+		   source = src3
+	   elseif(src==4)then
+		   source = src4
+	   elseif(src==5)then
+		   source = src5
+	   elseif(src==6)then
+		   source = src6
+	   elseif(src==7)then
+		   source = src7
+	   elseif(src==8)then
+		   source = src8
+	   elseif(src==9)then
+		   source = src9
+	   elseif(src==10)then
+		   source = src10
+	   elseif(src==11)then
+		   source = src11
+	   elseif(src==12)then
+		   source = src12
+   end if
+   
+   call cpu_time(ti_sect)
+   
+   call Date_and_time(date,time)
+   prefix = date(3:8)//'-'//time(1:4)//' '
+   write(*,*)prefix 
+   
+   type = 'Filter    ' 
+   PATH = 'Results\\'//source//'\\'//trim(type)//'\\'
+   open(unit=999, file=trim(PATH)//'Logs\\'//prefix//'log.txt')
+   
+   call Import_1a(source,N,TN)
+   allocate(z(N),zconf(N),omag(N),ra(N),dec(N),wt(N))
+   call Import_1b(TN,z,ra,dec,zconf,omag,wt)
+   deallocate(zconf,omag,wt)
+   
+  call cpu_time(tf_sect)
+  write(*,*)'  Section Time:', tf_sect-ti_sect
+  write(999,*)'  Section Time:', tf_sect-ti_sect	 
+ !============================================================================
+ !10. 1D Filter
+ !============================================================================
+ 	 type = '1D        '
+ 	 PATH = 'Results\\'//source//'\\Filter\\'//trim(type)//'\\'
+  !----------------------------------10.1 R-----------------------------------
+   if(opt_filter==1.OR.opt_filter==4)then
+   call cpu_time(ti_sect)
+   write(*,*)'Performing 1D Filter Analysis in R...'
+   write(999,*)'Performing 1D Filter Analysis in R...'
+   
+   write(*,*)'  Lower Boundary of Chosen Peak at Lambda =',pmin_r
+   write(999,*)'  Lower Boundary of Chosen Peak at Lambda =',pmin_r
+   write(*,*)'  Upper Boundary of Chosen Peak at Lambda =',pmax_r
+   write(999,*)'  Upper Boundary of Chosen Peak at Lambda =',pmax_r
+   write(*,*)'  Minimum Phase Value:',min_phase
+   write(999,*)'  Minimum Phase Value:',min_phase
+   
+
+   !Perform the Filtering
+   allocate(filter(n))
+   call Filter1(z,pmin_r,pmax_r,nk_r,filter)
+
+   !Write Out A Histogram of the Filter
+   allocate(hgram(NINT(2.0d0/.005)))
+   call Hist(filter,-1.0d0,1.0d0,0.05d0,hgram,source,type,'R  ',prefix)
+   deallocate(hgram)
+   
+   !Set those values too far out of phase to 0.
+   TN=0
+   do i=1,n
+    if(filter(i).GT.min_phase)then
+    	    TN=TN+1
+    end if
+   end do
+   
+   allocate(zf(TN),raf(TN),decf(TN))
+   TN=0
+   do i=1,n
+    if(filter(i).GT.min_phase)then
+    	  TN=TN+1
+    	  zf(TN)=z(i)
+    	  raf(TN)=ra(i)
+    	  decf(TN)=dec(i)
+    end if
+   end do
+   
+   !Write Out A Histogram of the Final R
+   allocate (hgram(NINT(Dc*(max_z-min_z)/bin_r)))
+   call Hist(zf,Dc*min_z,Dc*max_z,bin_r,Hgram,source,type,'R\R',prefix)
+   deallocate(hgram)
+   	    
+   
+   !Make a Polar Plot  
+    	 write(*,*)'  Making Polar Plot file...'
+ 	 write(999,*)'  Making Polar Plot file...'
+ 	 open(unit=101,file='Results\\'//source//'\\'&
+ 	 &//trim(type)//'\\R\\'//prefix//'PolarPlot.dat')
+ 	 do i=1,TN
+ 	 	write(101,14)raf(i), zf(i)
+ 	 end do
+ 	 close(101)
+ 	 
+   !Make a 3D Plot	 	 
+   allocate(xc(TN),yc(TN),zc(TN))
+  	  
+   !Convert to Cartesian Co-ords  
+   call Cart(zf,raf,decf,xc,yc,zc)
+ 	 	 
+   !Make A 3-D Plot
+   write(*,*)'  Creating 3D plot file...'
+   write(999,*)'  Creating 3D plot file...'
+   open (unit=102, file=trim(PATH)//'\\R\\'//prefix//'3DPlot.dat')
+    do i = 1, TN
+      write(102,16)xc(i),yc(i),zc(i)
+    end do
+   close(102)
+	 	 
+   deallocate(xc,yc,zc,zf,raf,decf,filter)
+  
+   call cpu_time(tf_sect)
+   write(*,*)'  Section Time:', tf_sect-ti_sect
+   write(999,*)'  Section Time', tf_sect-ti_sect
+   end if
+   
+  !-------------------------------------10.2 RA-------------------------------
+   if(opt_filter==2.OR.opt_filter==4)then
+   call cpu_time(ti_sect)
+   write(*,*)'Performing 1D Filter Analysis in RA...'
+   write(999,*)'Performing 1D Filter Analysis in RA...'
+   
+   write(*,*)'  Lower Boundary of Chosen Peak at Lambda =',pmin_th
+   write(999,*)'  Lower Boundary of Chosen Peak at Lambda =',pmin_th
+   write(*,*)'  Upper Boundary of Chosen Peak at Lambda =',pmax_th
+   write(999,*)'  Upper Boundary of Chosen Peak at Lambda =',pmax_th
+   write(*,*)'  Minimum Phase Value:',min_phase
+   write(999,*)'  Minimum Phase Value:',min_phase
+   
+
+   !Perform the Filtering
+   allocate(filter(n))
+   call Filter1(ra,pmin_th,pmax_th,nk_th,filter)
+
+   !Write Out A Histogram of the Filter
+   allocate(hgram(NINT(2.0d0/.005)))
+   call Hist(filter,-1.0d0,1.0d0,0.05d0,hgram,source,type,'A  ',prefix)
+   deallocate(hgram)
+   
+   !Set those values too far out of phase to 0.
+   TN=0
+   do i=1,n
+    if(filter(i).GT.min_phase)then
+    	    TN=TN+1
+    end if
+   end do
+   
+   allocate(zf(TN),raf(TN),decf(TN))
+   TN=0
+   do i=1,n
+    if(filter(i).GT.min_phase)then
+    	  TN=TN+1
+    	  zf(TN)=z(i)
+    	  raf(TN)=ra(i)
+    	  decf(TN)=dec(i)
+    end if
+   end do
+   
+   !Write Out A Histogram of the Final RA
+   allocate (hgram(NINT(500.0d0/6.0d0)))
+   call Hist(raf,pi*min_th/180.0,pi*max_th/180.0,bin_th,hgram&
+   &,source,type,'A\A',prefix)
+   deallocate(hgram)
+   	    
+   
+   !Make a Polar Plot  
+    	 write(*,*)'  Making Polar Plot file...'
+ 	 write(999,*)'  Making Polar Plot file...'
+ 	 open(unit=101,file='Results\\'//source//'\\'&
+ 	 &//trim(type)//'\\A\\'//prefix//'PolarPlot.dat')
+ 	 do i=1,TN
+ 	 	write(101,14)raf(i), zf(i)
+ 	 end do
+ 	 close(101)
+ 	 
+   !Make a 3D Plot	 	 
+   allocate(xc(TN),yc(TN),zc(TN))
+  	  
+   !Convert to Cartesian Co-ords  
+   call Cart(zf,raf,decf,xc,yc,zc)
+ 	 	 
+   !Make A 3-D Plot
+   write(*,*)'  Creating 3D plot file...'
+   write(999,*)'  Creating 3D plot file...'
+   open (unit=102, file=trim(PATH)//'\\A\\'//prefix//'3DPlot.dat')
+    do i = 1, TN
+      write(102,16)xc(i),yc(i),zc(i)
+    end do
+   close(102)
+	 	 
+   deallocate(xc,yc,zc,zf,raf,decf,filter)
+  
+   call cpu_time(tf_sect)
+   write(*,*)'  Section Time:', tf_sect-ti_sect
+   write(999,*)'  Section Time', tf_sect-ti_sect
+   end if
+  !-------------------------------------10.3 DEC-------------------------------
+   if(opt_filter==3.OR.opt_filter==4)then
+   call cpu_time(ti_sect)
+   write(*,*)'Performing 1D Filter Analysis in DEC...'
+   write(999,*)'Performing 1D Filter Analysis in DEC...'
+   
+   write(*,*)'  Lower Boundary of Chosen Peak at Lambda =',pmin_ph
+   write(999,*)'  Lower Boundary of Chosen Peak at Lambda =',pmin_ph
+   write(*,*)'  Upper Boundary of Chosen Peak at Lambda =',pmax_ph
+   write(999,*)'  Upper Boundary of Chosen Peak at Lambda =',pmax_ph
+   write(*,*)'  Minimum Phase Value:',min_phase
+   write(999,*)'  Minimum Phase Value:',min_phase
+   
+
+   !Perform the Filtering
+   allocate(filter(n))
+   call Filter1(dec,pmin_ph,pmax_ph,nk_ph,filter)
+
+   !Write Out A Histogram of the Filter
+   allocate(hgram(NINT(2.0d0/.005)))
+   call Hist(filter,-1.0d0,1.0d0,0.05d0,hgram,source,type,'D  ',prefix)
+   deallocate(hgram)
+   
+   !Set those values too far out of phase to 0.
+   TN=0
+   do i=1,n
+    if(filter(i).GT.min_phase)then
+    	    TN=TN+1
+    end if
+   end do
+   
+   allocate(zf(TN),raf(TN),decf(TN))
+   TN=0
+   do i=1,n
+    if(filter(i).GT.min_phase)then
+    	  TN=TN+1
+    	  zf(TN)=z(i)
+    	  raf(TN)=ra(i)
+    	  decf(TN)=dec(i)
+    end if
+   end do
+   
+   !Write Out A Histogram of the Final RA
+   allocate (hgram(NINT(500.0d0/6.0d0)))
+   call Hist(decf,pi*min_ph/180.0,pi*max_ph/180.0,bin_ph,hgram&
+   &,source,type,'D\D',prefix)
+   deallocate(hgram)
+   	    
+   
+   !Make a Polar Plot  
+    	 write(*,*)'  Making Polar Plot file...'
+ 	 write(999,*)'  Making Polar Plot file...'
+ 	 open(unit=101,file='Results\\'//source//'\\'&
+ 	 &//trim(type)//'\\D\\'//prefix//'PolarPlot.dat')
+ 	 do i=1,TN
+ 	 	write(101,14)raf(i), zf(i)
+ 	 end do
+ 	 close(101)
+ 	 
+   !Make a 3D Plot	 	 
+   allocate(xc(TN),yc(TN),zc(TN))
+  	  
+   !Convert to Cartesian Co-ords  
+   call Cart(zf,raf,decf,xc,yc,zc)
+ 	 	 
+   !Make A 3-D Plot
+   write(*,*)'  Creating 3D plot file...'
+   write(999,*)'  Creating 3D plot file...'
+   open (unit=102, file=trim(PATH)//'\\D\\'//prefix//'3DPlot.dat')
+    do i = 1, TN
+      write(102,16)xc(i),yc(i),zc(i)
+    end do
+   close(102)
+	 	 
+   deallocate(xc,yc,zc,zf,raf,decf,filter)
+  
+   call cpu_time(tf_sect)
+   write(*,*)'  Section Time:', tf_sect-ti_sect
+   write(999,*)'  Section Time', tf_sect-ti_sect
+   end if
+    
+ !============================================================================
+ !11. 3D Filter
+ !============================================================================
+ 	 type = '3D        '
+ 	 PATH = 'Results\\'//source//'\\Filter\\'//trim(type)//'\\'
+ 	 
+  if(opt_filter3D==1)then
+   call cpu_time(ti_sect)
+   write(*,*)'Performing 3D Filter Analysis...'
+   write(999,*)'Performing 3D Filter Analysis...'
+   
+   write(*,*)'  Lower Boundary of Chosen Peak at Lambda(z) =',pmin_r
+   write(999,*)'  Lower Boundary of Chosen Peak at Lambda(z) =',pmin_r
+   write(*,*)'  Upper Boundary of Chosen Peak at Lambda(z) =',pmax_r
+   write(999,*)'  Upper Boundary of Chosen Peak at Lambda(z) =',pmax_r
+   write(*,*)'  Lower Boundary of Chosen Peak at Lambda(th) =',pmin_th
+   write(999,*)'  Lower Boundary of Chosen Peak at Lambda(th) =',pmin_th
+   write(*,*)'  Upper Boundary of Chosen Peak at Lambda(th) =',pmax_th
+   write(999,*)'  Upper Boundary of Chosen Peak at Lambda(th) =',pmax_th
+   write(*,*)'  Lower Boundary of Chosen Peak at Lambda(ph) =',pmin_ph
+   write(999,*)'  Lower Boundary of Chosen Peak at Lambda(ph) =',pmin_ph
+   write(*,*)'  Upper Boundary of Chosen Peak at Lambda(ph) =',pmax_ph
+   write(999,*)'  Upper Boundary of Chosen Peak at Lambda(ph) =',pmax_ph
+   write(*,*)'  Minimum Phase Value:',min_phase
+   write(999,*)'  Minimum Phase Value:',min_phase
+   
+
+  !Perform the Filtering
+   allocate(filter(n))
+   call Filter3(z,ra,dec,pmin_r,pmax_r,pmin_th,pmax_th,pmin_ph,pmax_ph&
+   &,nk_r,nk_th,nk_ph,filter)
+
+  !Write Out A Histogram of the Filter
+   allocate(hgram(NINT(2.0d0/.005)))
+   call Hist(filter,-1.0d0,1.0d0,0.05d0,hgram,source,type,'A  ',prefix)
+   deallocate(hgram)
+   
+  !Set those values too far out of phase to 0.
+   TN=0
+   do i=1,n
+    if(filter(i).GT.min_phase3)then
+    	    TN=TN+1
+    end if
+   end do
+   
+   allocate(zf(TN),raf(TN),decf(TN))
+   TN=0
+   do i=1,n
+    if(filter(i).GT.min_phase3)then
+    	  TN=TN+1
+    	  zf(TN)=z(i)
+    	  raf(TN)=ra(i)
+    	  decf(TN)=dec(i)
+    end if
+   end do
+   
+  !Write Out A Histogram of the Final R
+   allocate (hgram(NINT(500.0d0/6.0d0)))
+   call Hist(zf,0.0d0,500.0d0,6.0d0,hgram,source,type,'A\R',prefix)
+   deallocate(hgram)
+   	    
+   
+  !Make a Polar Plot  
+    	 write(*,*)'  Making Polar Plot file...'
+ 	 write(999,*)'  Making Polar Plot file...'
+    open(unit=111, file=trim(PATH)//'\\A\\'//prefix//'PolarPlot.dat')
+ 	 do i=1,TN
+ 	 	write(111,14)raf(i), zf(i)
+ 	 end do
+ 	 close(111)
+ 	 
+  !Make a 3D Plot	 	 
+   allocate(xc(TN),yc(TN),zc(TN))
+  	  
+  !Convert to Cartesian Co-ords  
+   call Cart(zf,raf,decf,xc,yc,zc)
+ 	 	 
+  !Make A 3-D Plot
+   write(*,*)'  Creating 3D plot file...'
+   write(999,*)'  Creating 3D plot file...'
+   open (unit=112, file = trim(PATH)//'\\A\\'//prefix//'3DPlot.dat')
+    do i = 1, TN
+      write(112,16)xc(i),yc(i),zc(i)
+    end do
+   close(112)
+	 	 
+   deallocate(xc,yc,zc,zf,raf,decf,filter)
+  
+   call cpu_time(tf_sect)
+   write(*,*)'  Section Time:', tf_sect-ti_sect
+   write(999,*)'  Section Time', tf_sect-ti_sect
+  end if
+  
+  !-------------------------Formatting Etc.-----------------------------------    	  	  
+  	 deallocate(z,ra,dec)
+ 	 77 continue 	 
+ 	 end do
+ 	 
+ 	 call cpu_time(tf_all)
+ 	 write(*,*)'Total CPU Time:', tf_all-ti_all
+ 	 write(999,*)'Total CPU Time:', tf_all-ti_all
+ 	 
+ 	 14 format(2es20.8)
+ 	 16 format(3es20.8)
+ 	 
+end program GaussDensity
+  	  
