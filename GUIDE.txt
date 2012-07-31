@@ -1,0 +1,128 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++++
++												      +
++	GUIDE TO INSTALLING AND USING PyGS			      +
++												      +
+++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+1. GETTING THE ENVIRONMENT SET UP
+	a.) Getting a proper environment depends heavily on the OS
+		that you are using. If using Ubuntu, most installation can
+		be done via synaptic, if using mac or windows it is a little
+		more difficult.
+	b.) First make sure you have a working fortran 90 compiler.
+		I used gfortran for development. Ubuntu already has 
+		gfortran, mac doesn't so you will need to install it. I 
+		don't even know for Windows.
+	c.) Get python. Ubuntu and mac are shipped with a version of
+		python. Don't use it. Install the latest 2.x version (NOT 3.x!)
+		using your favourite method. HOWEVER, one nice option
+		to consider at this point is EPD - Enthought Python
+		Distribution. It comes shipped with basically every module
+		you'll need for PyGS and is very easy to install. 
+	d.) If going the way of EPD, install the 64-bit version I think.
+		Perhaps in the future we may need to use 32-bit. But
+		try the 64-bit for now. 
+	e.) Once EPD is installed, in terminal, type "which python".
+		You should see the python.exe in the EPD folder, not
+		the standard one shipped with your OS. If it is not the 
+		correct python, you probably have to modify your 
+		.bashrc file with a line saying: 
+		"export PATH = "<path to epd installation folder>":$PATH"
+		or something very similar. 
+	f.) If NOT going the way of EPD, then point your $PATH variable
+		to the new python interpreter you installed by adding 
+		something like 
+		"export PATH = "<path to  installation folder>":$PATH"
+		.bashrc file. 
+
+	f.) Once this is correct (either EPD or not), type "easy_install pip", 
+		which will install the module pip, which is an easy way to 
+		download and install most good modules.
+	g.) If NOT using EPD, then you will need to install a few modules
+		with pip. So type in terminal:
+		> pip install numpy
+		> pip install scipy
+		> pip install matplotlib
+		> pip install cosmolopy
+		> pip install asciitable
+		> pip install ipython
+		> pip install readline
+	h.) If using EPD, then there are only a couple of things to install:
+		> pip install cosmolopy
+		> pip install asciitable
+	    You can also update the others:
+		> pip update numpy
+		> pip update scipy
+		> pip update matplotlib
+
+	i.) Now your python setup is ready for PyGS.
+
+2. INSTALLING PyGS
+	a.) There are two ways to go here: If you just want to use PyGS
+		and not  work on it, (or just want to try it out easily before you
+		start working on it), then download just the tar.gz file under the
+		dist folder. If you want to work on PyGS, then download
+		everything under the PyGS folder (that includes setup.py,
+		README.txt etc).
+
+ - To install the just usable version:
+	b.) After downloading the tar.gz file, untar it, then in the terminal,
+		enter the untarred directory and then type:
+		> python setup.py install
+  		(You may need to type sudo beforehand depending on 
+		where your files are installed).
+
+	c.) As long as everything installs correctly (it may not, I've only tested
+		it with my specific OS and compiler etc.) then you are right to go.
+
+ - What to do with the source code:
+	d.) If you would like to have the source in the same way that I do on 
+		my computer then you will have downloaded the whole PyGS
+		directory. The source code itself is under PyGS/PyGS. The 
+		fortran code is under /fort. The only python file is the PyGS.py
+		file, which contains the class with many methods. You can
+		quite simply install the modules to your root python installation
+		by running the install.sh script after you make changes. 
+
+3. USING PyGS IN THE INTERPRETER
+	a.) Type ipython in the terminal. 
+	
+	b.) type:
+		 > from PyGS.PyGS import PyGS
+		NOTE: what we are doing here is saying
+		"from the package PyGS, and the module
+		PyGS therein, import the class PyGS"
+
+	c.) A few handy things in ipython: typing a variable or class
+		name followed by a ? brings up information about that
+		class/method/variable. I have tried to document PyGS
+		fairly well so doing this can help. For instance type
+		> PyGS?
+		Also, typing PyGS.<tab> will bring up the methods
+		and variables that PyGS contains (NOTE the dot after
+		PyGS). Tab acts as an autocomplete. This is also very
+		helpful.
+
+	d.) Make sure that you have a file containing Survey information.
+		If the file has a header with the information about each column
+		then the class may automatically detect which columns 
+		correspond to which variables (redshift, ra, dec etc). 
+		However, this may not be the case, and the program may
+		ask you what columns correspond to what. So make sure
+		you know where redshift, ra, dec and mag_r are.
+
+	e.) type:
+		> x = PyGS("<full path to survey>")
+		and follow the prompts if there are any. There are other options
+		when importing the survey but you can explore them later.
+		What this will do is import the survey info to the current session
+		and importantly create a folder where your file is, named after
+		the file which will house a similar file, formatted for future use
+		in the program (to make importing it easier next time).
+
+	f.) type:
+		> x.<tab>
+		a list of methods will come up that you can perform on the survey.
+		Just choose one! You can type any one followed by a ? to see what
+		it does
