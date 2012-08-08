@@ -33,7 +33,7 @@ import sys
 import os
 import errno
 import time
-from PyGS.fort.DFT import dft
+from fort.DFT import dft
 
 import cosmolopy.distance as cd
 from cosmolopy import *
@@ -1038,45 +1038,45 @@ class PyGS(object):
 
         return ps, wvl1, wvl2,wvl3      
    
-    def filtering(self,quantity=['c_dist'],kmin=[35.0],kmax=[45.0],n_k=[10],min_phase=0.5):
-        """
-        Filters the galaxies based on whether they are in phase with a selected Fourier peak.
-        
-        SHOULD BE ABLE TO DO ALL ANALYSIS WITH THE FILTERED GALAXIES BASED ON REMAINS CONDITION
-        IS IT BETTER TO DO THIS BY WRITING OUT THE 'FILTERED SURVEY'?
-        """
-       
-        from PyGS.fort.filter import filters
-        if type(quantity) == type([1,2,3]):
-            dim = len(quantity)
-            if dim > 3:
-                sys.exit("Too many quantities in filter (must be 3 or less)")
-            if (len(kmin) != dim) or (len(kmax) != dim) or (len(n_k) !=dim):
-                sys.exit("All input values must have same dimension")
-                                                            
-        if dim == 1:
-            filters.filter_1d(self.survey_data[quantity[0]],kmin[0],kmax[0],n_k[0],min_phase)
-            self.remains = np.asfortranarray(filters.remains)
-
-            filter_file = open(self.filtered_dir+'/1D_filter_'+kmin[0]+'to'+kmax[0])    
-            filter_file.write("# Fourier filter with following characteristics:\n")
-            filter_file.write("# kmin: "+kmin[0]+'\n')
-            filter_file.write("# kmax: "+ kmax[0]+'\n')
-            filter_file.write("# n_k: "+ n_k[0]+'\n')
-            filter_file.write("#======================")
-        
-            atab.write(self.survey_data[self.remains],filter_file)
-        
-            filter_file.close()
-            
-        if dim == 3:
-            filters.filter_3d(self.survey_data[quantity[0],quantity[1],quantity[2]],kmin,kmax,n_k,min_phase)
-            self.remains = np.asfortranarray(filters.remains)
-        
-        filter_file = open(self.filtered_dir+'/'+dim+'D_filter_'+kmin[0])    
-        survey_file.write("# Omega_k: "+str(self.cosmology["omega_k_0"])+'\n')
-        survey_file.write("# h: "+str(self.cosmology["h"])+'\n')
-        survey_file.write("# =================================\n\n")
+    #def filtering(self,quantity=['c_dist'],kmin=[35.0],kmax=[45.0],n_k=[10],min_phase=0.5):
+    #    """
+    #    Filters the galaxies based on whether they are in phase with a selected Fourier peak.
+    #    
+    #    SHOULD BE ABLE TO DO ALL ANALYSIS WITH THE FILTERED GALAXIES BASED ON REMAINS CONDITION
+    #    IS IT BETTER TO DO THIS BY WRITING OUT THE 'FILTERED SURVEY'?
+    #    """
+    #   
+    #    from PyGS.fort.filter import filters
+    #    if type(quantity) == type([1,2,3]):
+    #        dim = len(quantity)
+    #        if dim > 3:
+    #            sys.exit("Too many quantities in filter (must be 3 or less)")
+    #        if (len(kmin) != dim) or (len(kmax) != dim) or (len(n_k) !=dim):
+    #            sys.exit("All input values must have same dimension")
+    #                                                        
+    #    if dim == 1:
+    #        filters.filter_1d(self.survey_data[quantity[0]],kmin[0],kmax[0],n_k[0],min_phase)
+    #        self.remains = np.asfortranarray(filters.remains)
+    #
+    #        filter_file = open(self.filtered_dir+'/1D_filter_'+kmin[0]+'to'+kmax[0])    
+    #        filter_file.write("# Fourier filter with following characteristics:\n")
+    #        filter_file.write("# kmin: "+kmin[0]+'\n')
+    #        filter_file.write("# kmax: "+ kmax[0]+'\n')
+    #        filter_file.write("# n_k: "+ n_k[0]+'\n')
+    #        filter_file.write("#======================")
+    #    
+    #        atab.write(self.survey_data[self.remains],filter_file)
+    #    
+    #        filter_file.close()
+    #        
+    #    if dim == 3:
+    #        filters.filter_3d(self.survey_data[quantity[0],quantity[1],quantity[2]],kmin,kmax,n_k,min_phase)
+    #        self.remains = np.asfortranarray(filters.remains)
+    #    
+    #    filter_file = open(self.filtered_dir+'/'+dim+'D_filter_'+kmin[0])    
+    #    survey_file.write("# Omega_k: "+str(self.cosmology["omega_k_0"])+'\n')
+    #    survey_file.write("# h: "+str(self.cosmology["h"])+'\n')
+    #    survey_file.write("# =================================\n\n")
         
         atab.write(self.survey_data,survey_file)
         
